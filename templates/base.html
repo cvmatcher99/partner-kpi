@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>{% block title %}KPI{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg:      #f5f7fa;
+      --surface: #ffffff;
+      --sf2:     #f0f2f5;
+      --sf3:     #e8eaed;
+      --accent:  #2563eb;
+      --mint:    #059669;
+      --orange:  #ea6800;
+      --muted:   #6b7280;
+      --text:    #111827;
+      --danger:  #dc2626;
+      --border:  #e5e7eb;
+    }
+
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Cairo', sans-serif;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 16px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding-top: env(safe-area-inset-top);
+    }
+    .top-bar .logo { font-size: 22px; font-weight: 900; color: var(--accent); }
+    .top-bar .sub  { font-size: 12px; color: var(--muted); }
+    .top-bar .spacer { flex: 1; }
+    .badge-time {
+      font-size: 11px; color: var(--muted);
+      background: var(--sf3); padding: 4px 10px; border-radius: 20px;
+    }
+
+    /* ── Page wrapper ── */
+    .page { padding: 12px 14px; }
+
+    /* ── KPI grid ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .kpi-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    .kpi-value { font-size: 34px; font-weight: 900; line-height: 1; }
+
+    /* ── Section title ── */
+    .section-title {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin: 18px 0 10px;
+    }
+
+    /* ── Client card ── */
+    .client-row {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 10px;
+      display: block;
+      text-decoration: none;
+      color: var(--text);
+      min-height: 56px;
+      active-color: var(--sf2);
+    }
+    .client-row:active { background: var(--sf2); }
+
+    .client-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; line-height: 1.3; }
+    .client-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+    .badge {
+      font-size: 12px; padding: 3px 12px;
+      border-radius: 20px; font-weight: 700;
+    }
+    .badge-ai    { background: #dbeafe; color: #1d4ed8; }
+    .badge-m     { background: #d1fae5; color: #065f46; }
+    .badge-total { background: #ffedd5; color: #9a3412; }
+
+    /* ── Progress ── */
+    .progress {
+      height: 7px; background: var(--sf3);
+      border-radius: 4px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent), var(--mint));
+    }
+    .progress-label {
+      font-size: 11px; color: var(--muted);
+      margin-top: 4px; direction: ltr; text-align: left;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      min-height: 52px; padding: 0 20px;
+      border-radius: 14px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 15px; font-weight: 700;
+      border: none; cursor: pointer;
+      -webkit-appearance: none;
+    }
+    .btn:active { opacity: 0.75; }
+    .btn-mint { background: var(--mint); color: #fff; width: 100%; }
+
+    /* ── Back link ── */
+    .back-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--muted); font-size: 14px;
+      text-decoration: none; min-height: 44px;
+      margin-bottom: 12px;
+    }
+
+    /* ── Client header ── */
+    .client-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 16px;
+      margin-bottom: 14px;
+    }
+    .client-header h1 { font-size: 20px; font-weight: 900; margin-bottom: 4px; line-height: 1.3; }
+    .client-email { font-size: 12px; color: var(--muted); direction: ltr; display: block; }
+
+    /* ── App section ── */
+    .app-section { margin-bottom: 14px; }
+    .app-section-title {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0 4px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .count-pill {
+      background: var(--sf2); border: 1px solid var(--border);
+      border-radius: 20px; font-size: 11px; padding: 1px 8px; color: var(--text);
+    }
+
+    .app-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 13px 14px;
+      margin-bottom: 8px;
+    }
+    .app-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; line-height: 1.35; }
+    .app-sub   { font-size: 12px; color: var(--muted); direction: ltr; display: block; }
+
+    /* ── Sticky copy bar ── */
+    .copy-bar {
+      position: sticky; bottom: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 12px 14px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+      margin: 0 -14px;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 80px; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #111827; color: #fff;
+      font-size: 14px; font-weight: 700;
+      padding: 12px 28px; border-radius: 30px;
+      transition: transform 0.25s ease;
+      z-index: 999; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Empty ── */
+    .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 40px 20px; }
+
+    /* ── Bottom spacer ── */
+    .bottom-space { height: 90px; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <span class="logo">KPI</span>
+    <span class="sub">Tabashir</span>
+    <span class="spacer"></span>
+    {% if now %}<span class="badge-time">{{ now }}</span>{% endif %}
+  </div>
+
+  <div class="page">
+    {% block content %}{% endblock %}
+  </div>
+
+  <div class="toast" id="toast">✓ Copied!</div>
+
+  <script>
+    function showToast() {
+      const t = document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+    }
+    function copyText(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(showToast);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast();
+      }
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

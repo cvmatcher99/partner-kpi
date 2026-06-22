@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{{ client.name }}{% endblock %}
+
+{% block content %}
+<div style="padding-top:16px;">
+  <a class="back-link" href="/">← Dashboard</a>
+
+  <!-- Client Header -->
+  <div class="client-header">
+    <h1>{{ client.name }}</h1>
+    <span class="client-email">{{ client.email }}</span>
+    <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+      {% set total = ai_apps|length + linkedin|length + indeed|length + website|length + other|length %}
+      <span class="badge badge-total">{{ total }} total apps</span>
+      <span class="badge badge-ai">AI: {{ ai_apps|length }}</span>
+      <span class="badge badge-m">Manual: {{ (linkedin|length + indeed|length + website|length + other|length) }}</span>
+    </div>
+  </div>
+
+  <!-- AI Email Apps -->
+  {% if ai_apps %}
+  <div class="app-section">
+    <div class="app-section-title">
+      📧 Email Applications
+      <span class="count-pill">{{ ai_apps|length }}</span>
+    </div>
+    {% for a in ai_apps %}
+    <div class="app-item">
+      <div class="app-title">{{ a.company_name or a.job_title }}</div>
+      <span class="app-sub">{{ a.job_application_email }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- LinkedIn -->
+  {% if linkedin %}
+  <div class="app-section">
+    <div class="app-section-title">
+      💼 LinkedIn
+      <span class="count-pill">{{ linkedin|length }}</span>
+    </div>
+    {% for m in linkedin %}
+    <div class="app-item">
+      <div class="app-title">{{ m.parsed_title }}</div>
+      {% if m.parsed_company %}<span class="app-sub">{{ m.parsed_company }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Indeed -->
+  {% if indeed %}
+  <div class="app-section">
+    <div class="app-section-title">
+      🔍 Indeed
+      <span class="count-pill">{{ indeed|length }}</span>
+    </div>
+    {% for m in indeed %}
+    <div class="app-item">
+      <div class="app-title">{{ m.parsed_title }}</div>
+      {% if m.parsed_company %}<span class="app-sub">{{ m.parsed_company }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Website -->
+  {% if website %}
+  <div class="app-section">
+    <div class="app-section-title">
+      🌐 Website
+      <span class="count-pill">{{ website|length }}</span>
+    </div>
+    {% for m in website %}
+    <div class="app-item">
+      <div class="app-title">{{ m.parsed_title }}</div>
+      {% if m.parsed_company %}<span class="app-sub">{{ m.parsed_company }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Other -->
+  {% if other %}
+  <div class="app-section">
+    <div class="app-section-title">
+      📌 Other
+      <span class="count-pill">{{ other|length }}</span>
+    </div>
+    {% for m in other %}
+    <div class="app-item">
+      <div class="app-title">{{ m.parsed_title }}</div>
+      {% if m.parsed_company %}<span class="app-sub">{{ m.parsed_company }}</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Empty -->
+  {% set total = ai_apps|length + linkedin|length + indeed|length + website|length + other|length %}
+  {% if total == 0 %}
+  <div class="empty">No applications found for this client.</div>
+  {% endif %}
+
+  <div class="bottom-space"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const clientId = {{ client.id }};
+
+  function copyReport() {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '⏳ Loading...';
+    btn.disabled = true;
+
+    fetch('/api/report/' + clientId)
+      .then(r => r.json())
+      .then(data => {
+        if (data.text) {
+          copyText(data.text);
+        }
+        btn.textContent = '✓ Copied!';
+        btn.style.background = '#27ae60';
+        setTimeout(() => {
+          btn.textContent = '📋  Copy Report';
+          btn.style.background = '';
+          btn.disabled = false;
+        }, 2000);
+      })
+      .catch(() => {
+        btn.textContent = '✗ Error';
+        btn.disabled = false;
+      });
+  }
+</script>
+
+<div class="copy-bar">
+  <button class="btn btn-mint btn-full" id="copyBtn" onclick="copyReport()">
+    📋  Copy Report
+  </button>
+</div>
+{% endblock %}
