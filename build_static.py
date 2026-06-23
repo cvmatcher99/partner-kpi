@@ -26,23 +26,16 @@ def parse(title):
 conn = psycopg2.connect(**DB, cursor_factory=psycopg2.extras.RealDictCursor)
 cur  = conn.cursor()
 
-# KPI totals
-cur.execute("""
-    SELECT COUNT(DISTINCT c.id) AS tc,
-           COALESCE(SUM(c.jobs_to_apply_number),0) AS tt,
-           COUNT(DISTINCT ma.id) AS tm,
-           COALESCE(SUM(ra.ai_count),0) AS ta
-    FROM clients c
-    LEFT JOIN manual_applications ma ON ma.client_id = c.id
-    LEFT JOIN (SELECT LOWER(email) em, COUNT(*) ai_count
-               FROM rankings WHERE status='applied' GROUP BY LOWER(email)) ra
-           ON ra.em = LOWER(c.email)
-    WHERE c.is_partner = TRUE
-""")
-k = dict(cur.fetchone())
-kpi = {"clients": int(k["tc"]), "target": int(k["tt"]),
-       "manual": int(k["tm"]), "ai": int(k["ta"]),
-       "total": int(k["tm"]) + int(k["ta"])}
+# KPI totals — separate queries to avoid JOIN multiplication
+cur.execute("SELECT COUNT(*) AS n FROM clients WHERE is_partner=TRUE")
+tc = cur.fetchone()["n"]
+cur.execute("SELECT COALESCE(SUM(jobs_to_apply_number),0) AS n FROM clients WHERE is_partner=TRUE")
+tt = int(cur.fetchone()["n"])
+cur.execute("SELECT COUNT(*) AS n FROM manual_applications ma JOIN clients c ON ma.client_id=c.id WHERE c.is_partner=TRUE")
+tm = cur.fetchone()["n"]
+cur.execute("SELECT COUNT(*) AS n FROM rankings r JOIN clients c ON LOWER(c.email)=LOWER(r.email) WHERE r.status='applied' AND c.is_partner=TRUE")
+ta = cur.fetchone()["n"]
+kpi = {"clients": int(tc), "target": tt, "manual": int(tm), "ai": int(ta), "total": int(tm)+int(ta)}
 
 # Clients
 cur.execute("""
@@ -199,8 +192,8 @@ body{{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-
 .btn-mint{{background:var(--mint);color:#fff}}
 .empty{{text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}}
 .bottom-space{{height:90px}}
-.toast{{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(60px);background:#111827;color:#fff;font-size:14px;font-weight:700;padding:12px 28px;border-radius:30px;transition:transform .25s ease;z-index:999;pointer-events:none}}
-.toast.show{{transform:translateX(-50%) translateY(0)}}
+.toast{{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;font-size:14px;font-weight:700;padding:12px 28px;border-radius:30px;transition:opacity .3s ease,visibility .3s ease;z-index:9999;pointer-events:none;direction:ltr;white-space:nowrap;opacity:0;visibility:hidden}}
+.toast.show{{opacity:1;visibility:visible}}
 </style>
 </head>
 <body>
@@ -225,8 +218,9 @@ let currentClient = null;
 
 function showToast(){{
   const t=document.getElementById('toast');
+  t.textContent='Copied ✓';
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2000);
+  setTimeout(function(){{t.classList.remove('show');}},2500);
 }}
 function copyText(text){{
   if(navigator.clipboard){{navigator.clipboard.writeText(text).then(showToast);}}
