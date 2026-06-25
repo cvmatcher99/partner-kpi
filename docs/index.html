@@ -21,7 +21,8 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 .logo{font-size:22px;font-weight:900;color:var(--accent)}
 .sub{font-size:12px;color:var(--muted)}
 .spacer{flex:1}
-.badge-time{font-size:11px;color:var(--muted);background:var(--sf3);padding:4px 10px;border-radius:20px}
+.live-badge{font-size:11px;color:#059669;background:#d1fae5;padding:4px 10px;border-radius:20px;font-weight:700}
+.time-badge{font-size:11px;color:var(--muted);background:var(--sf3);padding:4px 10px;border-radius:20px}
 .page{padding:12px 14px}
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;margin-top:14px}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 12px;text-align:center}
@@ -39,7 +40,6 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 .progress{height:7px;background:var(--sf3);border-radius:4px;overflow:hidden}
 .progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--mint))}
 .progress-label{font-size:11px;color:var(--muted);margin-top:4px;direction:ltr;text-align:left}
-/* Detail view */
 #detail{display:none}
 .back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:14px;text-decoration:none;min-height:44px;margin-bottom:12px;cursor:pointer;background:none;border:none;font-family:'Cairo',sans-serif}
 .client-header{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 16px;margin-bottom:14px}
@@ -58,6 +58,8 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 .btn-mint{background:var(--mint);color:#fff}
 .empty{text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}
 .bottom-space{height:90px}
+.loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px}
+.error-box{background:#fef2f2;border:1px solid #fecaca;border-radius:14px;padding:20px;margin:20px 0;color:#991b1b;font-size:13px;text-align:center}
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;font-size:14px;font-weight:700;padding:12px 28px;border-radius:30px;transition:opacity .3s ease,visibility .3s ease;z-index:9999;pointer-events:none;direction:ltr;white-space:nowrap;opacity:0;visibility:hidden}
 .toast.show{opacity:1;visibility:visible}
 </style>
@@ -67,20 +69,20 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
   <span class="logo">KPI</span>
   <span class="sub">Tabashir</span>
   <span class="spacer"></span>
-  <span class="badge-time" id="nowBadge"></span>
+  <span class="live-badge" id="liveBadge">● LIVE</span>
+  <span class="time-badge" id="nowBadge">—</span>
 </div>
 
-<!-- Dashboard -->
-<div id="dashboard" class="page"></div>
-
-<!-- Detail -->
+<div id="dashboard" class="page"><div class="loading">جاري التحميل...</div></div>
 <div id="detail" class="page"></div>
 
 <div class="toast" id="toast">✓ Copied!</div>
 
 <script>
-const DATA = {"kpi": {"clients": 9, "target": 892, "manual": 100, "ai": 8, "total": 108}, "clients": [{"id": 1876, "name": "SARA ALJNEIBI", "email": "queenjuly1982@gmail.com", "mc": 26, "ac": 1, "total": 27, "pct": 27, "target": 99, "ai": [{"company": "pro coordinator / government relations officer", "email": "recruitment.hr@hmshost.net"}], "linkedin": [], "indeed": [], "website": [{"title": "Receptionist", "company": "Groomy Pet"}, {"title": "HR & Emiratization Executive – UAE National", "company": ""}, {"title": "Senior Associate – Employee Experience (UAE Nationals)", "company": ""}, {"title": "HR Support Officer", "company": "UAEN Only"}, {"title": "HR Officer", "company": ""}, {"title": "People & Culture Executive", "company": ""}, {"title": "Administration Officer", "company": ""}, {"title": "PMC- Administration Officer – UAE National", "company": ""}, {"title": "HR Operations Senior Associate Officer", "company": ""}, {"title": "Administrative positions within Abu Dhabi University (Emiratization-Emirati applicants only)", "company": ""}, {"title": "Lifecycle Specialist, Employee Relations and Transitions", "company": "EMEA"}, {"title": "Medical Scribe-Health Information Management", "company": ""}, {"title": "Associate.Patient Administration.Al Rafa Medical Centre", "company": "Abu Dhabi"}, {"title": "Medical Records Officer", "company": ""}, {"title": "Patient Access Officer-Longevity Clinic – Admin", "company": ""}, {"title": "Patient Access Representative", "company": "Arabic Speaker"}, {"title": "Medical Scribe-Health Information Management", "company": ""}, {"title": "Patient Access Representative", "company": ""}, {"title": "Patient Experience Officer-Longevity Clinic – Admin", "company": ""}, {"title": "Senior Patient Experience Officer (Al Dhafra Hospitals)", "company": ""}, {"title": "Recruitment & Onboarding Administrator (UAE National)", "company": ""}, {"title": "Hospital Administrator", "company": ""}, {"title": "Medical Secretary cum Admin", "company": ""}, {"title": "Patient Experience Officer-UAEN", "company": ""}, {"title": "Administration Officer", "company": ""}, {"title": "Administrator", "company": ""}], "other": [], "copyText": "*تقرير العميل:* *SARA ALJNEIBI*\nالتقديم عبر الإيميلات\npro coordinator / government relations officer — recruitment.hr@hmshost.net\nالتقديم عبر الموقع الإلكتروني\nReceptionist — Groomy Pet\nHR & Emiratization Executive – UAE National\nSenior Associate – Employee Experience (UAE Nationals)\nHR Support Officer — UAEN Only\nHR Officer\nPeople & Culture Executive\nAdministration Officer\nPMC- Administration Officer – UAE National\nHR Operations Senior Associate Officer\nAdministrative positions within Abu Dhabi University (Emiratization-Emirati applicants only)\nLifecycle Specialist, Employee Relations and Transitions — EMEA\nMedical Scribe-Health Information Management\nAssociate.Patient Administration.Al Rafa Medical Centre — Abu Dhabi\nMedical Records Officer\nPatient Access Officer-Longevity Clinic – Admin\nPatient Access Representative — Arabic Speaker\nMedical Scribe-Health Information Management\nPatient Access Representative\nPatient Experience Officer-Longevity Clinic – Admin\nSenior Patient Experience Officer (Al Dhafra Hospitals)\nRecruitment & Onboarding Administrator (UAE National)\nHospital Administrator\nMedical Secretary cum Admin\nPatient Experience Officer-UAEN\nAdministration Officer\nAdministrator\n\nالإجمالي: 27 تقديم | 23/06/2026"}, {"id": 1882, "name": "DR. ABDULLA ATEEQ BANDOOQ ALQEMZI", "email": "qe61@hotmail.com", "mc": 10, "ac": 5, "total": 15, "pct": 15, "target": 95, "ai": [{"company": "🟢 job opportunity jordan, morocco, sudan, tunisia, and gcc nationals – ajman", "email": "elsisiyoussif312@gmail.com"}, {"company": "📢 فرصة وظيفية – compliance officer | dubai", "email": "k.sara@tascoutsourcing.com"}, {"company": "business development executive", "email": "info@eeauae.ae"}, {"company": "director of shared services", "email": "hoztph@gmail.com"}, {"company": "administrative assistant / market research coordinator", "email": "Heba.abdelhadi@feedbackme.com"}], "linkedin": [], "indeed": [], "website": [{"title": "Specialist", "company": "Business Operations (Client Administration)"}, {"title": "Delivery Manager", "company": "UAE National"}, {"title": "Technical Delivery Manager", "company": ""}, {"title": "Manager", "company": "AI Training"}, {"title": "Collection Strategy Analyst", "company": ""}, {"title": "Manager", "company": "Partner Sales"}, {"title": "Risk Systems & Strategy Deployment Manager", "company": ""}, {"title": "Scrum master", "company": ""}, {"title": "Manager", "company": "Business Continuity (Space42)"}, {"title": "Manager- Customer Service", "company": ""}], "other": [], "copyText": "*تقرير العميل:* *DR. ABDULLA ATEEQ BANDOOQ ALQEMZI*\nالتقديم عبر الإيميلات\n🟢 job opportunity jordan, morocco, sudan, tunisia, and gcc nationals – ajman — elsisiyoussif312@gmail.com\n📢 فرصة وظيفية – compliance officer | dubai — k.sara@tascoutsourcing.com\nbusiness development executive — info@eeauae.ae\ndirector of shared services — hoztph@gmail.com\nadministrative assistant / market research coordinator — Heba.abdelhadi@feedbackme.com\nالتقديم عبر الموقع الإلكتروني\nSpecialist — Business Operations (Client Administration)\nDelivery Manager — UAE National\nTechnical Delivery Manager\nManager — AI Training\nCollection Strategy Analyst\nManager — Partner Sales\nRisk Systems & Strategy Deployment Manager\nScrum master\nManager — Business Continuity (Space42)\nManager- Customer Service\n\nالإجمالي: 15 تقديم | 23/06/2026"}, {"id": 1884, "name": "AYSHA RASHED ALSHAMSI", "email": "ay-alshamsi@outlook.com", "mc": 13, "ac": 0, "total": 13, "pct": 13, "target": 100, "ai": [], "linkedin": [], "indeed": [], "website": [{"title": "Graduate Mechanical Engineer", "company": ""}, {"title": "Graduate", "company": "Mechanical Engineer"}, {"title": "Mechanical Engineer", "company": ""}, {"title": "Graduate", "company": "Electrical / Mechanical Engineer_(Emirati National)"}, {"title": "Mechanical Engineer", "company": ""}, {"title": "Mechanical Engineer", "company": ""}, {"title": "Planning Engineer (Fabrication & Construction)", "company": ""}, {"title": "Mechanical Engineer (Fresh Graduates)", "company": ""}, {"title": "Graduate Engineer (Multidiscipline)", "company": ""}, {"title": "ENGINEER, I-C MAINTENANCE", "company": ""}, {"title": "Engineer, Rotating Equipment Maintenance (Habshan)", "company": ""}, {"title": "Engineer", "company": "Mechanical (Site)"}, {"title": "PMC Junior Mechanical Engineer (UAE National)", "company": ""}], "other": [], "copyText": "*تقرير العميل:* *AYSHA RASHED ALSHAMSI*\nالتقديم عبر الموقع الإلكتروني\nGraduate Mechanical Engineer\nGraduate — Mechanical Engineer\nMechanical Engineer\nGraduate — Electrical / Mechanical Engineer_(Emirati National)\nMechanical Engineer\nMechanical Engineer\nPlanning Engineer (Fabrication & Construction)\nMechanical Engineer (Fresh Graduates)\nGraduate Engineer (Multidiscipline)\nENGINEER, I-C MAINTENANCE\nEngineer, Rotating Equipment Maintenance (Habshan)\nEngineer — Mechanical (Site)\nPMC Junior Mechanical Engineer (UAE National)\n\nالإجمالي: 13 تقديم | 23/06/2026"}, {"id": 1885, "name": "KHULOUD MUBARAK", "email": "khuloodmohammed5@hotmail.com", "mc": 10, "ac": 2, "total": 12, "pct": 12, "target": 98, "ai": [{"company": "customer happiness consultant", "email": "Hr@gldws.ae"}, {"company": "quality coordinator", "email": "emiratisation@meguae.org"}], "linkedin": [], "indeed": [], "website": [{"title": "Quality Assurance Specialist (UAE National)", "company": ""}, {"title": "Quality Assurance Specialist (UAE National)", "company": ""}, {"title": "Quality Assurance Specialist (UAE National)", "company": ""}, {"title": "Assistant Manager, Operational Risk", "company": ""}, {"title": "Senior Manager, Strategy Planning", "company": ""}, {"title": "Senior Officer AML & CFT ( UAE National )", "company": ""}, {"title": "Assistant Manager Operational Risk (UAE National)", "company": ""}, {"title": "Contact Centre Associate", "company": ""}, {"title": "Assistant Programme Manager (UAE National)", "company": ""}, {"title": "Senior Officer AML", "company": ""}], "other": [], "copyText": "*تقرير العميل:* *KHULOUD MUBARAK*\nالتقديم عبر الإيميلات\ncustomer happiness consultant — Hr@gldws.ae\nquality coordinator — emiratisation@meguae.org\nالتقديم عبر الموقع الإلكتروني\nQuality Assurance Specialist (UAE National)\nQuality Assurance Specialist (UAE National)\nQuality Assurance Specialist (UAE National)\nAssistant Manager, Operational Risk\nSenior Manager, Strategy Planning\nSenior Officer AML & CFT ( UAE National )\nAssistant Manager Operational Risk (UAE National)\nContact Centre Associate\nAssistant Programme Manager (UAE National)\nSenior Officer AML\n\nالإجمالي: 12 تقديم | 23/06/2026"}, {"id": 1886, "name": "MARWA SALEH AL HAMMADI", "email": "Marwasalhammadi@gmail.com", "mc": 10, "ac": 0, "total": 10, "pct": 10, "target": 100, "ai": [], "linkedin": [], "indeed": [], "website": [{"title": "Autoline Support Analyst", "company": ""}, {"title": "Help Desk Coordinator", "company": ""}, {"title": "Specialist, Content Management", "company": ""}, {"title": "Project Manager (m/f/d)", "company": ""}, {"title": "Project Manager", "company": "UAE"}, {"title": "Project Manager", "company": "Product Implementation"}, {"title": "IT & Digital Coordinator", "company": ""}, {"title": "IT Specialist", "company": ""}, {"title": "Platform Delivery Lead / Release Train Manager", "company": ""}, {"title": "Scrum master", "company": ""}], "other": [], "copyText": "*تقرير العميل:* *MARWA SALEH AL HAMMADI*\nالتقديم عبر الموقع الإلكتروني\nAutoline Support Analyst\nHelp Desk Coordinator\nSpecialist, Content Management\nProject Manager (m/f/d)\nProject Manager — UAE\nProject Manager — Product Implementation\nIT & Digital Coordinator\nIT Specialist\nPlatform Delivery Lead / Release Train Manager\nScrum master\n\nالإجمالي: 10 تقديم | 23/06/2026"}, {"id": 1887, "name": "MEAAD TARIQ AL MASHGHOUNI", "email": "meme99mimo@gmail.com", "mc": 10, "ac": 0, "total": 10, "pct": 10, "target": 100, "ai": [], "linkedin": [], "indeed": [], "website": [{"title": "Graduate Operations Manager", "company": ""}, {"title": "Recruitment Coordinator", "company": ""}, {"title": "Operations Manager", "company": ""}, {"title": "Personal Assistant", "company": ""}, {"title": "Technical Account Manager", "company": ""}, {"title": "Senior Client Operations Advisor / Special Operations", "company": ""}, {"title": "Customer Onboarding Specialist", "company": ""}, {"title": "Executive Assistant", "company": ""}, {"title": "Graduate Programme 2027: Strategy & Operations Manager", "company": ""}, {"title": "Internship Programme 2027: Strategy & Operations Manager", "company": ""}], "other": [], "copyText": "*تقرير العميل:* *MEAAD TARIQ AL MASHGHOUNI*\nالتقديم عبر الموقع الإلكتروني\nGraduate Operations Manager\nRecruitment Coordinator\nOperations Manager\nPersonal Assistant\nTechnical Account Manager\nSenior Client Operations Advisor / Special Operations\nCustomer Onboarding Specialist\nExecutive Assistant\nGraduate Programme 2027: Strategy & Operations Manager\nInternship Programme 2027: Strategy & Operations Manager\n\nالإجمالي: 10 تقديم | 23/06/2026"}, {"id": 1883, "name": "MUBARAK ALBLOOSHI", "email": "auh\n_99@hotmail.com", "mc": 10, "ac": 0, "total": 10, "pct": 10, "target": 100, "ai": [], "linkedin": [], "indeed": [], "website": [{"title": "SME – Reliability", "company": ""}, {"title": "SME – Process Engineering", "company": ""}, {"title": "SME – Mechanical Integrity & Corrosion", "company": ""}, {"title": "SME – Static Equipment", "company": ""}, {"title": "SME – Rotating Equipment", "company": ""}, {"title": "Specialist, Venture Building", "company": ""}, {"title": "Business Development Manager", "company": "Materials Innovation & Sustainability"}, {"title": "Bids Manager", "company": ""}, {"title": "Delivery & PMO Lead", "company": ""}, {"title": "Platform Delivery Lead / Release Train Manager", "company": ""}], "other": [], "copyText": "*تقرير العميل:* *MUBARAK ALBLOOSHI*\nالتقديم عبر الموقع الإلكتروني\nSME – Reliability\nSME – Process Engineering\nSME – Mechanical Integrity & Corrosion\nSME – Static Equipment\nSME – Rotating Equipment\nSpecialist, Venture Building\nBusiness Development Manager — Materials Innovation & Sustainability\nBids Manager\nDelivery & PMO Lead\nPlatform Delivery Lead / Release Train Manager\n\nالإجمالي: 10 تقديم | 23/06/2026"}, {"id": 1888, "name": "FATIMA SAEED AL HEBSI", "email": "ffatimasaeed2004@gmail.com", "mc": 8, "ac": 0, "total": 8, "pct": 8, "target": 100, "ai": [], "linkedin": [{"title": "Office Assistant", "company": ""}, {"title": "Customer Service Representative", "company": ""}], "indeed": [], "website": [{"title": "Agent", "company": "Call Center Operations"}, {"title": "Cashier", "company": "Cage"}, {"title": "Administrative Assistant", "company": ""}, {"title": "Customer Service Representative Administrative Assistant", "company": ""}, {"title": "Customer Service Representative (WFH)", "company": ""}, {"title": "Customer Experience Specialist", "company": ""}], "other": [], "copyText": "*تقرير العميل:* *FATIMA SAEED AL HEBSI*\nالتقديم عبر LinkedIn\nOffice Assistant\nCustomer Service Representative\nالتقديم عبر الموقع الإلكتروني\nAgent — Call Center Operations\nCashier — Cage\nAdministrative Assistant\nCustomer Service Representative Administrative Assistant\nCustomer Service Representative (WFH)\nCustomer Experience Specialist\n\nالإجمالي: 8 تقديم | 23/06/2026"}, {"id": 1880, "name": "DEEMAH YOUSEF ALHAMOUDI", "email": "deemoty-112@outlook.com", "mc": 3, "ac": 0, "total": 3, "pct": 3, "target": 100, "ai": [], "linkedin": [], "indeed": [], "website": [{"title": "Mechanical Project Engineer", "company": ""}, {"title": "Safety Officer (EHS) – Oil & Gas Industry", "company": ""}, {"title": "Engineer", "company": "Systems Assurance"}], "other": [], "copyText": "*تقرير العميل:* *DEEMAH YOUSEF ALHAMOUDI*\nالتقديم عبر الموقع الإلكتروني\nMechanical Project Engineer\nSafety Officer (EHS) – Oil & Gas Industry\nEngineer — Systems Assurance\n\nالإجمالي: 3 تقديم | 23/06/2026"}], "now": "23 Jun 2026, 11:11"};
+const API = 'https://backend.tabashir.ae/api/v1/kpi/data';
+let DATA = null;
 let currentClient = null;
+let refreshTimer = null;
 
 function showToast(){
   const t=document.getElementById('toast');
@@ -97,6 +99,7 @@ function renderDashboard(){
   document.getElementById('detail').style.display='none';
   const dash=document.getElementById('dashboard');
   dash.style.display='block';
+  if(!DATA){dash.innerHTML='<div class="loading">جاري التحميل...</div>';return;}
   const k=DATA.kpi;
   let html=`
   <div class="kpi-grid">
@@ -123,13 +126,15 @@ function renderDashboard(){
 }
 
 function showClient(id){
+  if(!DATA)return;
   const c=DATA.clients.find(x=>x.id===id);
   if(!c)return;
   currentClient=c;
   document.getElementById('dashboard').style.display='none';
   const det=document.getElementById('detail');
   det.style.display='block';
-  const manualCount=c.linkedin.length+c.indeed.length+c.website.length+c.other.length;
+  const acc=c.acc||[];
+  const manualCount=acc.length+(c.linkedin||[]).length+(c.indeed||[]).length+(c.website||[]).length;
   let html=`
   <button class="back-link" onclick="renderDashboard()">← Dashboard</button>
   <div class="client-header">
@@ -141,24 +146,29 @@ function showClient(id){
       <span class="badge badge-m">Manual: ${manualCount}</span>
     </div>
   </div>`;
-  if(c.ai.length){
+  if(c.ai&&c.ai.length){
     html+=`<div class="app-section"><div class="app-section-title">📧 Email Applications<span class="count-pill">${c.ai.length}</span></div>`;
     c.ai.forEach(a=>{html+=`<div class="app-item"><div class="app-title">${a.company}</div><span class="app-sub">${a.email}</span></div>`;});
     html+='</div>';
   }
-  if(c.linkedin.length){
+  if(acc.length){
+    html+=`<div class="app-section"><div class="app-section-title">🔑 دخول حساب<span class="count-pill">${acc.length}</span></div>`;
+    acc.forEach(e=>{html+=`<div class="app-item"><div class="app-title">${e.title}</div>${e.company?`<span class="app-sub">${e.company}</span>`:''}</div>`;});
+    html+='</div>';
+  }
+  if(c.linkedin&&c.linkedin.length){
     html+=`<div class="app-section"><div class="app-section-title">💼 LinkedIn<span class="count-pill">${c.linkedin.length}</span></div>`;
     c.linkedin.forEach(e=>{html+=`<div class="app-item"><div class="app-title">${e.title}</div>${e.company?`<span class="app-sub">${e.company}</span>`:''}</div>`;});
     html+='</div>';
   }
-  if(c.indeed.length){
-    html+=`<div class="app-section"><div class="app-section-title">🔍 Indeed<span class="count-pill">${c.indeed.length}</span></div>`;
-    c.indeed.forEach(e=>{html+=`<div class="app-item"><div class="app-title">${e.title}</div>${e.company?`<span class="app-sub">${e.company}</span>`:''}</div>`;});
-    html+='</div>';
-  }
-  if(c.website.length){
+  if(c.website&&c.website.length){
     html+=`<div class="app-section"><div class="app-section-title">🌐 Website<span class="count-pill">${c.website.length}</span></div>`;
     c.website.forEach(e=>{html+=`<div class="app-item"><div class="app-title">${e.title}</div>${e.company?`<span class="app-sub">${e.company}</span>`:''}</div>`;});
+    html+='</div>';
+  }
+  if(c.indeed&&c.indeed.length){
+    html+=`<div class="app-section"><div class="app-section-title">🔍 Indeed<span class="count-pill">${c.indeed.length}</span></div>`;
+    c.indeed.forEach(e=>{html+=`<div class="app-item"><div class="app-title">${e.title}</div>${e.company?`<span class="app-sub">${e.company}</span>`:''}</div>`;});
     html+='</div>';
   }
   if(!c.total)html+='<div class="empty">No applications yet.</div>';
@@ -171,9 +181,44 @@ function showClient(id){
   window.scrollTo(0,0);
 }
 
-// Init
-document.getElementById('nowBadge').textContent=DATA.now;
-renderDashboard();
+function fetchData(){
+  const lb=document.getElementById('liveBadge');
+  const nb=document.getElementById('nowBadge');
+  lb.textContent='● جاري التحديث...';
+  lb.style.background='#fef3c7';
+  lb.style.color='#92400e';
+  fetch(API)
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(d){
+      DATA=d;
+      const prevId=currentClient?currentClient.id:null;
+      if(prevId){
+        const updated=DATA.clients.find(x=>x.id===prevId);
+        if(updated){currentClient=updated;}
+      }
+      const onDetail=document.getElementById('detail').style.display!=='none';
+      if(!onDetail){renderDashboard();}
+      nb.textContent=d.now;
+      lb.textContent='● LIVE';
+      lb.style.background='#d1fae5';
+      lb.style.color='#059669';
+      if(refreshTimer)clearTimeout(refreshTimer);
+      refreshTimer=setTimeout(fetchData,5*60*1000);
+    })
+    .catch(function(e){
+      lb.textContent='● خطأ';
+      lb.style.background='#fef2f2';
+      lb.style.color='#991b1b';
+      if(!DATA){
+        document.getElementById('dashboard').innerHTML=
+          '<div class="error-box">تعذّر الاتصال بالسيرفر<br><small>'+e.message+'</small></div>';
+      }
+      if(refreshTimer)clearTimeout(refreshTimer);
+      refreshTimer=setTimeout(fetchData,30*1000);
+    });
+}
+
+fetchData();
 </script>
 </body>
 </html>
