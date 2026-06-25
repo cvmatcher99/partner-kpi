@@ -196,7 +196,7 @@ function fetchData(){
         const updated=DATA.clients.find(x=>x.id===prevId);
         if(updated){currentClient=updated;}
       }
-      const onDetail=document.getElementById('detail').style.display!=='none';
+      const onDetail=document.getElementById('detail').style.display==='block';
       if(!onDetail){renderDashboard();}
       nb.textContent=d.now;
       lb.textContent='● LIVE';
