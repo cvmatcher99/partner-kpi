@@ -24,19 +24,30 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 .live-badge{font-size:11px;color:#059669;background:#d1fae5;padding:4px 10px;border-radius:20px;font-weight:700}
 .time-badge{font-size:11px;color:var(--muted);background:var(--sf3);padding:4px 10px;border-radius:20px}
 .page{padding:12px 14px}
-.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;margin-top:14px}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;margin-top:14px}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 12px;text-align:center}
 .kpi-label{font-size:11px;color:var(--muted);margin-bottom:4px}
 .kpi-value{font-size:34px;font-weight:900;line-height:1}
-.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:18px 0 10px}
-.client-row{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:block;text-decoration:none;color:var(--text);cursor:pointer}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;margin-bottom:14px}
+.filter-btn{flex:1;min-height:40px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Cairo',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s}
+.filter-btn.active{border-color:var(--accent);background:#eff6ff;color:var(--accent)}
+.filter-btn.active-new{border-color:#059669;background:#d1fae5;color:#065f46}
+
+.section-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 10px}
+.client-row{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:block;text-decoration:none;color:var(--text);cursor:pointer;position:relative}
 .client-row:active{background:var(--sf2)}
+.client-row.is-new{border-color:#6ee7b7;border-width:2px}
 .client-name{font-size:16px;font-weight:700;margin-bottom:8px;line-height:1.3}
 .client-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .badge{font-size:12px;padding:3px 12px;border-radius:20px;font-weight:700}
 .badge-ai{background:#dbeafe;color:#1d4ed8}
 .badge-m{background:#d1fae5;color:#065f46}
 .badge-total{background:#ffedd5;color:#9a3412}
+.badge-new{background:#d1fae5;color:#065f46;font-size:11px;padding:2px 9px}
+.new-dot{position:absolute;top:14px;left:14px;width:8px;height:8px;border-radius:50%;background:#059669}
+.date-label{font-size:11px;color:var(--muted);margin-top:4px}
 .progress{height:7px;background:var(--sf3);border-radius:4px;overflow:hidden}
 .progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--mint))}
 .progress-label{font-size:11px;color:var(--muted);margin-top:4px;direction:ltr;text-align:left}
@@ -83,6 +94,14 @@ const API = 'https://backend.tabashir.ae/api/v1/kpi/data';
 let DATA = null;
 let currentClient = null;
 let refreshTimer = null;
+let activeFilter = 'all'; // 'all' | 'new'
+
+function daysSince(dateStr){
+  if(!dateStr) return 9999;
+  const d=new Date(dateStr);
+  const now=new Date();
+  return Math.floor((now-d)/(1000*60*60*24));
+}
 
 function showToast(){
   const t=document.getElementById('toast');
@@ -95,12 +114,23 @@ function copyText(text){
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast();}
 }
 
+function setFilter(f){
+  activeFilter=f;
+  renderDashboard();
+}
+
 function renderDashboard(){
   document.getElementById('detail').style.display='none';
   const dash=document.getElementById('dashboard');
   dash.style.display='block';
   if(!DATA){dash.innerHTML='<div class="loading">جاري التحميل...</div>';return;}
   const k=DATA.kpi;
+
+  // Filter clients
+  const allClients=DATA.clients;
+  const newClients=allClients.filter(c=>daysSince(c.dateIn)<=10);
+  const list=activeFilter==='new'?newClients:allClients;
+
   let html=`
   <div class="kpi-grid">
     <div class="kpi-card"><div class="kpi-label">Clients</div><div class="kpi-value" style="color:#2563eb">${k.clients}</div></div>
@@ -108,19 +138,34 @@ function renderDashboard(){
     <div class="kpi-card"><div class="kpi-label">AI Email</div><div class="kpi-value" style="color:#059669">${k.ai}</div></div>
     <div class="kpi-card"><div class="kpi-label">Manual</div><div class="kpi-value" style="color:#7c3aed">${k.manual}</div></div>
   </div>
-  <div class="section-title">Clients</div>`;
-  DATA.clients.forEach(c=>{
-    html+=`<div class="client-row" onclick="showClient(${c.id})">
-      <div class="client-name">${c.name}</div>
-      <div class="client-meta">
-        <span class="badge badge-total">${c.total} apps</span>
-        <span class="badge badge-ai">AI: ${c.ac}</span>
-        <span class="badge badge-m">Manual: ${c.mc}</span>
-      </div>
-      <div class="progress"><div class="progress-fill" style="width:${c.pct}%"></div></div>
-      <div class="progress-label">${c.pct}% of ${c.target} target</div>
-    </div>`;
-  });
+  <div class="filter-bar">
+    <button class="filter-btn ${activeFilter==='all'?'active':''}" onclick="setFilter('all')">الكل (${allClients.length})</button>
+    <button class="filter-btn ${activeFilter==='new'?'active-new':''}" onclick="setFilter('new')">🆕 جدد — آخر 10 أيام (${newClients.length})</button>
+  </div>
+  <div class="section-title">${activeFilter==='new'?'العملاء الجدد':'جميع العملاء'}</div>`;
+
+  if(list.length===0){
+    html+='<div class="empty">لا يوجد عملاء جدد في آخر 10 أيام</div>';
+  } else {
+    list.forEach(c=>{
+      const days=daysSince(c.dateIn);
+      const isNew=days<=10;
+      const newBadge=isNew?`<span class="badge badge-new">جديد · منذ ${days===0?'اليوم':days+' يوم'}</span>`:'';
+      const newDot=isNew?'<div class="new-dot"></div>':'';
+      html+=`<div class="client-row${isNew?' is-new':''}" onclick="showClient(${c.id})">
+        ${newDot}
+        <div class="client-name">${c.name}</div>
+        <div class="client-meta">
+          <span class="badge badge-total">${c.total} apps</span>
+          <span class="badge badge-ai">AI: ${c.ac}</span>
+          <span class="badge badge-m">Manual: ${c.mc}</span>
+          ${newBadge}
+        </div>
+        <div class="progress"><div class="progress-fill" style="width:${c.pct}%"></div></div>
+        <div class="progress-label">${c.pct}% of ${c.target} target</div>
+      </div>`;
+    });
+  }
   html+='<div class="bottom-space"></div>';
   dash.innerHTML=html;
 }
@@ -135,6 +180,8 @@ function showClient(id){
   det.style.display='block';
   const acc=c.acc||[];
   const manualCount=acc.length+(c.linkedin||[]).length+(c.indeed||[]).length+(c.website||[]).length;
+  const days=daysSince(c.dateIn);
+  const isNew=days<=10;
   let html=`
   <button class="back-link" onclick="renderDashboard()">← Dashboard</button>
   <div class="client-header">
@@ -144,7 +191,9 @@ function showClient(id){
       <span class="badge badge-total">${c.total} total</span>
       <span class="badge badge-ai">AI: ${c.ac}</span>
       <span class="badge badge-m">Manual: ${manualCount}</span>
+      ${isNew?`<span class="badge badge-new">جديد · منذ ${days===0?'اليوم':days+' يوم'}</span>`:''}
     </div>
+    ${c.dateIn?`<div class="date-label" style="margin-top:8px;font-size:11px;color:var(--muted)">تاريخ الانضمام: ${c.dateIn}</div>`:''}
   </div>`;
   if(c.ai&&c.ai.length){
     html+=`<div class="app-section"><div class="app-section-title">📧 Email Applications<span class="count-pill">${c.ai.length}</span></div>`;
