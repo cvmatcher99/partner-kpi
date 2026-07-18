@@ -111,22 +111,20 @@
 <script>
   const clientId = {{ client.id }};
 
-  function copyReport() {
-    const btn = document.getElementById('copyBtn');
-    btn.textContent = '⏳ Loading...';
+  function copyReport(period, btnId) {
+    const btn = document.getElementById(btnId);
+    const origText = btn.textContent;
+    btn.textContent = '⏳ ...';
     btn.disabled = true;
 
-    const period = "{{ period }}";
     fetch('/api/report/' + clientId + '?period=' + period)
       .then(r => r.json())
       .then(data => {
-        if (data.text) {
-          copyText(data.text);
-        }
+        if (data.text) copyText(data.text);
         btn.textContent = '✓ Copied!';
         btn.style.background = '#27ae60';
         setTimeout(() => {
-          btn.textContent = '📋  Copy Report';
+          btn.textContent = origText;
           btn.style.background = '';
           btn.disabled = false;
         }, 2000);
@@ -139,8 +137,16 @@
 </script>
 
 <div class="copy-bar">
-  <button class="btn btn-mint btn-full" id="copyBtn" onclick="copyReport()">
-    📋  Copy Report
-  </button>
+  <div style="display:flex; gap:10px;">
+    <button class="btn btn-mint" id="btnAll" style="flex:1;"
+            onclick="copyReport('all', 'btnAll')">
+      📋 نسخ الكل
+    </button>
+    <button class="btn" id="btnToday"
+            style="flex:1; background:#ea6800; color:#fff;"
+            onclick="copyReport('today', 'btnToday')">
+      📋 نسخ اليوم
+    </button>
+  </div>
 </div>
 {% endblock %}
