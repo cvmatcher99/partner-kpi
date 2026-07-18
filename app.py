@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, abort
+from flask import Flask, render_template, jsonify, abort, request
 import psycopg2
 import psycopg2.extras
 from datetime import datetime
@@ -13,7 +13,6 @@ def db():
 
 
 def parse_title_company(job_title):
-    """Split 'Title | Company' into (title, company)."""
     for sep in [" | ", " — ", " - "]:
         if sep in job_title:
             parts = job_title.split(sep, 1)
@@ -32,25 +31,37 @@ def categorize_link(link):
     return "website"
 
 
+def get_period():
+    """Return 'today' or 'all' from query string."""
+    p = request.args.get("period", "all")
+    return "today" if p == "today" else "all"
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/")
 def index():
+    period = get_period()
+    today_filter_ma = "AND DATE(ma.app_date) = CURRENT_DATE" if period == "today" else ""
+    today_filter_rk = "AND DATE(r.date) = CURRENT_DATE"      if period == "today" else ""
+
     conn = db()
     cur  = conn.cursor()
 
     # KPI totals
-    cur.execute("""
+    cur.execute(f"""
         SELECT
             COUNT(DISTINCT c.id)                                    AS total_clients,
             COALESCE(SUM(c.jobs_to_apply_number), 0)                AS total_target,
             COUNT(DISTINCT ma.id)                                   AS total_manual,
             COALESCE(SUM(ra.ai_count), 0)                          AS total_ai
         FROM clients c
-        LEFT JOIN manual_applications ma ON ma.client_id = c.id
+        LEFT JOIN manual_applications ma
+               ON ma.client_id = c.id {today_filter_ma}
         LEFT JOIN (
             SELECT LOWER(email) AS em, COUNT(*) AS ai_count
-            FROM rankings WHERE status = 'applied'
+            FROM rankings
+            WHERE status = 'applied' {today_filter_rk}
             GROUP BY LOWER(email)
         ) ra ON ra.em = LOWER(c.email)
         WHERE c.is_partner = TRUE
@@ -59,16 +70,18 @@ def index():
     kpi["total_apps"] = int(kpi["total_manual"]) + int(kpi["total_ai"])
 
     # Per-client list
-    cur.execute("""
+    cur.execute(f"""
         SELECT c.id, c.name, c.email,
                COUNT(DISTINCT ma.id)           AS manual_count,
                COALESCE(ra.ai_count, 0)        AS ai_count,
                c.jobs_to_apply_number          AS target
         FROM clients c
-        LEFT JOIN manual_applications ma ON ma.client_id = c.id
+        LEFT JOIN manual_applications ma
+               ON ma.client_id = c.id {today_filter_ma}
         LEFT JOIN (
             SELECT LOWER(email) AS em, COUNT(*) AS ai_count
-            FROM rankings WHERE status = 'applied'
+            FROM rankings
+            WHERE status = 'applied' {today_filter_rk}
             GROUP BY LOWER(email)
         ) ra ON ra.em = LOWER(c.email)
         WHERE c.is_partner = TRUE
@@ -78,7 +91,7 @@ def index():
     clients = []
     for r in cur.fetchall():
         d = dict(r)
-        total = int(d["manual_count"]) + int(d["ai_count"])
+        total  = int(d["manual_count"]) + int(d["ai_count"])
         target = int(d["target"] or 0)
         d["total_apps"] = total
         d["pct"] = min(100, int(total * 100 / target) if target > 0 else 0)
@@ -86,11 +99,16 @@ def index():
 
     conn.close()
     return render_template("index.html", kpi=kpi, clients=clients,
+                           period=period,
                            now=datetime.now().strftime("%d %b %Y, %H:%M"))
 
 
 @app.route("/client/<int:client_id>")
 def client_detail(client_id):
+    period = get_period()
+    today_filter_ma = "AND DATE(app_date) = CURRENT_DATE" if period == "today" else ""
+    today_filter_rk = "AND DATE(r.date) = CURRENT_DATE"   if period == "today" else ""
+
     conn = db()
     cur  = conn.cursor()
 
@@ -102,22 +120,23 @@ def client_detail(client_id):
     client = dict(row)
 
     # AI email apps
-    cur.execute("""
+    cur.execute(f"""
         SELECT r.job_title, r.job_application_email,
                COALESCE(j.company_name, '') AS company_name,
                r.date
         FROM rankings r
         LEFT JOIN jobs j ON r.job_id = j.id::text
         WHERE LOWER(r.email) = LOWER(%s) AND r.status = 'applied'
+              {today_filter_rk}
         ORDER BY r.date DESC, r.id DESC
     """, (client["email"],))
     ai_apps = [dict(r) for r in cur.fetchall()]
 
     # Manual apps
-    cur.execute("""
+    cur.execute(f"""
         SELECT job_title, job_link, app_date, status
         FROM manual_applications
-        WHERE client_id = %s
+        WHERE client_id = %s {today_filter_ma}
         ORDER BY app_date DESC, id DESC
     """, (client_id,))
     manual_raw = [dict(r) for r in cur.fetchall()]
@@ -144,11 +163,16 @@ def client_detail(client_id):
                            linkedin=linkedin,
                            indeed=indeed,
                            website=website,
-                           other=other)
+                           other=other,
+                           period=period)
 
 
 @app.route("/api/report/<int:client_id>")
 def api_report(client_id):
+    period = get_period()
+    today_filter_ma = "AND DATE(app_date) = CURRENT_DATE" if period == "today" else ""
+    today_filter_rk = "AND DATE(r.date) = CURRENT_DATE"   if period == "today" else ""
+
     conn = db()
     cur  = conn.cursor()
 
@@ -159,20 +183,21 @@ def api_report(client_id):
         return jsonify({"error": "not found"}), 404
     client = dict(row)
 
-    cur.execute("""
+    cur.execute(f"""
         SELECT r.job_application_email,
                COALESCE(j.company_name, r.job_title) AS company_name
         FROM rankings r
         LEFT JOIN jobs j ON r.job_id = j.id::text
         WHERE LOWER(r.email) = LOWER(%s) AND r.status = 'applied'
+              {today_filter_rk}
         ORDER BY r.date DESC, r.id DESC
     """, (client["email"],))
     ai_apps = [dict(r) for r in cur.fetchall()]
 
-    cur.execute("""
+    cur.execute(f"""
         SELECT job_title, job_link
         FROM manual_applications
-        WHERE client_id = %s
+        WHERE client_id = %s {today_filter_ma}
         ORDER BY app_date DESC
     """, (client_id,))
     manual_raw = [dict(r) for r in cur.fetchall()]
@@ -192,8 +217,9 @@ def api_report(client_id):
         else:
             other.append(entry)
 
+    period_label = "اليوم" if period == "today" else "الكل"
     lines = []
-    lines.append(f"*تقرير العميل:* *{client['name']}*")
+    lines.append(f"*تقرير العميل:* *{client['name']}* ({period_label})")
 
     if ai_apps:
         lines.append("التقديم عبر الإيميلات")

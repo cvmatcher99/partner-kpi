@@ -2,22 +2,37 @@
 {% block title %}KPI — Dashboard{% endblock %}
 
 {% block content %}
+
+<!-- Period Toggle -->
+<div style="display:flex; gap:8px; margin-top:14px; margin-bottom:14px;">
+  <a href="/?period=all"
+     style="flex:1; text-align:center; padding:10px; border-radius:12px; font-weight:700; font-size:14px; text-decoration:none;
+            {% if period == 'all' %}background:#2563eb; color:#fff;{% else %}background:#e8eaed; color:#6b7280;{% endif %}">
+    الكل
+  </a>
+  <a href="/?period=today"
+     style="flex:1; text-align:center; padding:10px; border-radius:12px; font-weight:700; font-size:14px; text-decoration:none;
+            {% if period == 'today' %}background:#059669; color:#fff;{% else %}background:#e8eaed; color:#6b7280;{% endif %}">
+    اليوم
+  </a>
+</div>
+
 <!-- KPI Cards -->
-<div class="kpi-grid" style="margin-top:14px;">
+<div class="kpi-grid">
   <div class="kpi-card">
     <div class="kpi-label">Clients</div>
     <div class="kpi-value" style="color:#4f8ef7;">{{ kpi.total_clients }}</div>
   </div>
   <div class="kpi-card">
-    <div class="kpi-label">Total Apps</div>
+    <div class="kpi-label">Total Apps{% if period == 'today' %} — اليوم{% endif %}</div>
     <div class="kpi-value" style="color:#ff8c00;">{{ kpi.total_apps }}</div>
   </div>
   <div class="kpi-card">
-    <div class="kpi-label">AI Email</div>
+    <div class="kpi-label">AI Email{% if period == 'today' %} — اليوم{% endif %}</div>
     <div class="kpi-value" style="color:#38d9a9;">{{ kpi.total_ai }}</div>
   </div>
   <div class="kpi-card">
-    <div class="kpi-label">Manual</div>
+    <div class="kpi-label">Manual{% if period == 'today' %} — اليوم{% endif %}</div>
     <div class="kpi-value" style="color:#c77dff;">{{ kpi.total_manual }}</div>
   </div>
 </div>
@@ -29,7 +44,7 @@
   <div class="empty">No partner clients found.</div>
 {% else %}
   {% for c in clients %}
-  <a class="client-row" href="/client/{{ c.id }}">
+  <a class="client-row" href="/client/{{ c.id }}?period={{ period }}">
     <div class="client-name">{{ c.name }}</div>
     <div class="client-meta">
       <span class="badge badge-total">{{ c.total_apps }} apps</span>

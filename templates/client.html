@@ -3,7 +3,7 @@
 
 {% block content %}
 <div style="padding-top:16px;">
-  <a class="back-link" href="/">← Dashboard</a>
+  <a class="back-link" href="/?period={{ period }}">← Dashboard</a>
 
   <!-- Client Header -->
   <div class="client-header">
@@ -116,7 +116,8 @@
     btn.textContent = '⏳ Loading...';
     btn.disabled = true;
 
-    fetch('/api/report/' + clientId)
+    const period = "{{ period }}";
+    fetch('/api/report/' + clientId + '?period=' + period)
       .then(r => r.json())
       .then(data => {
         if (data.text) {
