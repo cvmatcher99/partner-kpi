@@ -115,7 +115,7 @@ function copyText(text){
 async function copyToday(id){
   showToast('جاري الجلب...');
   try{
-    const res=await fetch('https://backend.tabashir.ae/api/report/'+id+'?period=today');
+    const res=await fetch('https://backend.tabashir.ae/api/v1/kpi/report/'+id+'?period=today');
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
     if(!data.text||data.text.indexOf('الإجمالي: 0 ')!==-1){
