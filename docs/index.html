@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -90,8 +90,6 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 
 <script>
 const API = 'https://backend.tabashir.ae/api/v1/kpi/data';
-const TODAY_COPY = {"1941": "‫*تقرير العميل:* *WADHA KHASIF OBAID AL-WAHSHI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1930": "‫*تقرير العميل:* *AMEERA KHALFAN SALEM ALKAABI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1926": "‫*تقرير العميل:* *KALTHAM ALQUBAISI* (اليوم)\nالتقديم عبر الموقع الإلكتروني\nCustomer Service Admin Representative\nAdministrative Assistant — Emirati Talent\nCoordinator, Learning & Development (Training)\nField Service Administrator\nOperations Assistant (UAE National)\nAdministration Specialist Associate\nJunior Service Administrator\nAdministration Officer\nAdministrative & Events (UAE National / Emirati) (m/f/d)\nCustomer Service Representative\nEntry-Level Administrative Professional — Operations & Office Support (Remote)\n\nالإجمالي: 11 تقديم | 18/07/2026", "1882": "‫*تقرير العميل:* *DR. ABDULLA ATEEQ BANDOOQ ALQEMZI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1888": "‫*تقرير العميل:* *FATIMA SAEED AL HEBSI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1876": "‫*تقرير العميل:* *SARA ALJNEIBI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1880": "‫*تقرير العميل:* *DEEMAH YOUSEF ALHAMOUDI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1884": "‫*تقرير العميل:* *AYSHA RASHED ALSHAMSI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1886": "‫*تقرير العميل:* *MARWA SALEH AL HAMMADI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1887": "‫*تقرير العميل:* *MEAAD TARIQ AL MASHGHOUNI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1922": "‫*تقرير العميل:* *BADREYYA ALHEBSI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1924": "‫*تقرير العميل:* *ROUDHA ABDALLAH ALALAWI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1925": "‫*تقرير العميل:* *REEM ALKAABI* (اليوم)\nالتقديم عبر LinkedIn\nHealth Safety Environment Engineer\nالتقديم عبر Indeed\nHSE Engineer\nHSE Engineer\nSafety / EHS Engineer – Overhead Transmission Line (OHTL) & Substation – UAE\nالتقديم عبر الموقع الإلكتروني\nHealth & Safety Engineer\nSenior Associate – Government Relations\n\nالإجمالي: 6 تقديم | 18/07/2026", "1929": "‫*تقرير العميل:* *MONA SAEED AL MAHROOQI .* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1923": "‫*تقرير العميل:* *GHANIM BAKHIT SAEED BINJARN* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1919": "‫*تقرير العميل:* *MOHAMMED FAHAD AL-MAAMARI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1920": "‫*تقرير العميل:* *AMAL ALI ALENEZI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1921": "‫*تقرير العميل:* *Mohamed Mahfouz Mostafa Abdulaziz* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1885": "‫*تقرير العميل:* *KHULOUD MUBARAK* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1918": "‫*تقرير العميل:* *HAZZA NASER ABDULLA SALEH ALMANSOORI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026", "1883": "‫*تقرير العميل:* *MUBARAK ALBLOOSHI* (اليوم)\n\nالإجمالي: 0 تقديم | 18/07/2026"};
-const BUILD_DATE = '18/07/2026 20:43';
 let DATA = null;
 let currentClient = null;
 let refreshTimer = null;
@@ -114,13 +112,20 @@ function copyText(text){
   if(navigator.clipboard){navigator.clipboard.writeText(text).then(function(){showToast();});}
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast();}
 }
-function copyToday(id){
-  const text=TODAY_COPY[String(id)];
-  if(!text||text.indexOf('إجمالي: 0 ')!==-1){
-    showToast('لا تقديمات اليوم');
-    return;
+async function copyToday(id){
+  showToast('جاري الجلب...');
+  try{
+    const res=await fetch('https://backend.tabashir.ae/api/report/'+id+'?period=today');
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(!data.text||data.text.indexOf('الإجمالي: 0 ')!==-1){
+      showToast('لا تقديمات اليوم');
+      return;
+    }
+    copyText(data.text);
+  }catch(e){
+    showToast('خطأ في الجلب');
   }
-  copyText(text);
 }
 
 function setFilter(f){
