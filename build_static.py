@@ -29,6 +29,89 @@ def parse(title):
     return title.strip(), ""
 
 
+# ---- entity (company) extraction from application links / emails ------------
+import re
+from urllib.parse import urlparse
+
+# Known application emails → the real entity name behind them.
+EMAIL_CO = {
+    "careers@tamimi.com": "Al Tamimi & Company",
+    "careers@moe.gov.ae": "UAE Ministry of Education",
+    "info@fbi.ae": "FBI (First Building & Interiors)",
+}
+
+
+def _spaced(s):
+    s = re.sub(r"[-_]+", " ", s or "")
+    s = re.sub(r"([a-z])([A-Z])", r"\1 \2", s)  # camelCase -> spaced
+    out = s.strip().title()
+    return {"Cpx": "CPX"}.get(out, out)         # acronym fix-ups
+
+
+# ATS host → fixed brand, when the company isn't in the URL path.
+_HOST_BRAND = {
+    "adnoc.ae": "ADNOC", "adu.ac.ae": "Abu Dhabi University", "puffy.com": "Puffy",
+    "revolut.com": "Revolut", "micro1.ai": "micro1", "hrapp.co": "Pulse Media (Workwisely)",
+}
+# Generic ATS hosts where the company can't be recovered from the URL.
+_GENERIC = ("oraclecloud.com", "ceipal.com", "recruitcrm.io", "linkedin.com",
+            "indeed.com", "bayt.com", "naukrigulf.com")
+
+
+def company_from_link(link):
+    if not link:
+        return None
+    try:
+        u = urlparse(link); host = u.netloc.lower(); path = u.path
+    except Exception:
+        return None
+    segs = [p for p in path.split("/") if p]
+    if any(g in host for g in _GENERIC):
+        return None
+    for h, brand in _HOST_BRAND.items():
+        if h in host:
+            return brand
+    if "smartrecruiters.com" in host:
+        m = re.search(r"/company/([^/]+)", path)
+        return _spaced(re.sub(r"\d+$", "", m.group(1))) if m else None  # EtihadAirways5 -> Etihad Airways
+    if "ncoreplat.com" in host and segs: return _spaced(segs[-1].split("-")[0])  # .../saipem-spa-... -> Saipem
+    if "lever.co" in host and segs:      return _spaced(segs[0])
+    if "ashbyhq.com" in host and segs:   return _spaced(segs[0])
+    if "greenhouse.io" in host and segs: return _spaced(segs[0])
+    if "g42.ai" in host and segs:        return _spaced(segs[0]) + " (G42)"
+    if "now-remote.com" in host:         return _spaced(host.split(".")[0])
+    parts = host.split(".")
+    if len(parts) >= 3 and parts[0] in ("careers", "jobs", "apply", "app", "recruiting"):
+        return _spaced(parts[1])
+    if len(parts) >= 2:
+        return _spaced(parts[-2])
+    return None
+
+
+def build_entities(cur, cid, email):
+    """{'email': [{company,email}], 'portal': [{company,count}]} for one client."""
+    cur.execute("""SELECT job_application_email AS em, job_title
+                   FROM rankings WHERE LOWER(email)=LOWER(%s) AND status='applied'
+                   ORDER BY date DESC""", (email,))
+    email_apps, seen_em = [], set()
+    for r in cur.fetchall():
+        em = (r["em"] or "").strip()
+        if not em or em.lower() in seen_em:
+            continue
+        seen_em.add(em.lower())
+        email_apps.append({"company": EMAIL_CO.get(em.lower(), ""), "email": em})
+
+    cur.execute("SELECT job_link FROM manual_applications WHERE client_id=%s", (cid,))
+    counts = {}
+    for m in cur.fetchall():
+        co = company_from_link(m["job_link"])
+        if co:
+            counts[co] = counts.get(co, 0) + 1
+    portal = [{"company": k, "count": v} for k, v in
+              sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+    return {"email": email_apps, "portal": portal}
+
+
 def build_copy(name, ai, linkedin, indeed, website, other, label):
     lines = [f"‫*تقرير العميل:* *{name}* ({label})"]
     if ai:
@@ -63,9 +146,12 @@ cur  = conn.cursor()
 cur.execute("SELECT id, name, email FROM clients WHERE is_partner=TRUE")
 clients_raw = [dict(r) for r in cur.fetchall()]
 
-today_copy = {}  # {str(id): copyTextToday}
+today_copy = {}   # {str(id): copyTextToday}
+entities_map = {} # {str(id): {email:[...], portal:[...]}}  (all-time, real companies)
 
 for c in clients_raw:
+    entities_map[str(c["id"])] = build_entities(cur, c["id"], c["email"])
+
     # Today's AI apps
     cur.execute("""
         SELECT COALESCE(j.company_name, r.job_title) AS company,
@@ -103,8 +189,9 @@ for c in clients_raw:
 
 conn.close()
 
-today_json  = json.dumps(today_copy, ensure_ascii=False)
-build_label = datetime.now().strftime("%d/%m/%Y %H:%M")
+today_json    = json.dumps(today_copy, ensure_ascii=False)
+entities_json = json.dumps(entities_map, ensure_ascii=False)
+build_label   = datetime.now().strftime("%d/%m/%Y %H:%M")
 
 HTML = """<!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -174,6 +261,10 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 .entities{display:flex;flex-direction:column;gap:8px}
 .entity-chip{display:flex;align-items:center;gap:10px;background:var(--sf2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;line-height:1.35}
 .entity-num{flex:0 0 24px;width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ent-sub{font-size:11px;font-weight:700;color:var(--muted);margin:12px 0 8px}
+.ent-name{flex:1;display:flex;flex-direction:column;gap:2px}
+.ent-mail{font-size:11px;font-weight:400;color:var(--muted);direction:ltr}
+.ent-cnt{flex:0 0 auto;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11px;font-weight:700;border-radius:20px;padding:2px 9px;direction:ltr}
 .copy-bar{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom));margin:0 -14px}
 .copy-row{display:flex;gap:10px}
 .btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px;padding:0 20px;border-radius:14px;font-family:'Cairo',sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;flex:1}
@@ -205,6 +296,7 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 <script>
 const API = 'https://backend.tabashir.ae/api/v1/kpi/data';
 const TODAY_COPY = """ + today_json + """;
+const ENTITIES = """ + entities_json + """;
 const BUILD_DATE = '""" + build_label + """';
 let DATA = null;
 let currentClient = null;
@@ -292,17 +384,31 @@ function renderDashboard(){
   dash.innerHTML=html;
 }
 
-function collectEntities(c){
-  // Every distinct entity/company we applied to for this client, across all
-  // channels — email company, or the company/title of each manual application.
-  const names=[];
-  (c.ai||[]).forEach(a=>{const n=(a.company||'').trim(); if(n) names.push(n);});
-  ['acc','linkedin','website','indeed'].forEach(k=>{
-    (c[k]||[]).forEach(e=>{const n=((e.company||e.title)||'').trim(); if(n) names.push(n);});
-  });
-  const seen={}, out=[];
-  names.forEach(n=>{const key=n.toLowerCase(); if(!seen[key]){seen[key]=1; out.push(n);}});
-  return out;
+function renderEntities(id){
+  // Real company names extracted from application emails + portal links at build
+  // time (baked into ENTITIES), shown in two clear groups.
+  const e = ENTITIES[String(id)];
+  if(!e || (!e.email.length && !e.portal.length)) return '';
+  const total = e.email.length + e.portal.length;
+  let h = `<div class="entities-card"><div class="entities-head">🏢 الجهات التي تم التقديم عليها<span class="count-pill">${total}</span></div>`;
+  if(e.email.length){
+    h += `<div class="ent-sub">📧 عبر الإيميل</div><div class="entities">`;
+    e.email.forEach((a,i)=>{
+      const name = a.company || a.email;
+      const sub  = a.company ? `<span class="ent-mail">${a.email}</span>` : '';
+      h += `<div class="entity-chip"><span class="entity-num">${i+1}</span><span class="ent-name">${name}${sub}</span></div>`;
+    });
+    h += `</div>`;
+  }
+  if(e.portal.length){
+    h += `<div class="ent-sub">🏢 عبر البورتالات / المواقع</div><div class="entities">`;
+    e.portal.forEach((p,i)=>{
+      const cnt = p.count>1 ? `<span class="ent-cnt">${p.count}×</span>` : '';
+      h += `<div class="entity-chip"><span class="entity-num">${i+1}</span><span class="ent-name">${p.company}</span>${cnt}</div>`;
+    });
+    h += `</div>`;
+  }
+  return h + `</div>`;
 }
 
 function showClient(id){
@@ -330,12 +436,7 @@ function showClient(id){
     </div>
     ${c.dateIn?`<div class="date-label" style="margin-top:8px;font-size:11px;color:var(--muted)">تاريخ الانضمام: ${c.dateIn}</div>`:''}
   </div>`;
-  const entities=collectEntities(c);
-  if(entities.length){
-    html+=`<div class="entities-card"><div class="entities-head">🏢 الجهات التي تم التقديم عليها<span class="count-pill">${entities.length}</span></div><div class="entities">`;
-    entities.forEach((n,i)=>{html+=`<div class="entity-chip"><span class="entity-num">${i+1}</span><span>${n}</span></div>`;});
-    html+=`</div></div>`;
-  }
+  html+=renderEntities(c.id);
   if(c.ai&&c.ai.length){
     html+=`<div class="app-section"><div class="app-section-title">📧 التقديم عبر الإيميل<span class="count-pill">${c.ai.length}</span></div>`;
     c.ai.forEach(a=>{html+=`<div class="app-item"><div class="app-title">${a.company}</div><span class="app-sub">${a.email}</span></div>`;});
