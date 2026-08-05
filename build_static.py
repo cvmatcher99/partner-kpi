@@ -168,6 +168,12 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 .app-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 14px;margin-bottom:8px}
 .app-title{font-size:14px;font-weight:700;margin-bottom:2px;line-height:1.35}
 .app-sub{font-size:12px;color:var(--muted);direction:ltr;display:block}
+.entities-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 14px 6px;margin-bottom:14px}
+.entities-head{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.entities-head .count-pill{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+.entities{display:flex;flex-direction:column;gap:8px}
+.entity-chip{display:flex;align-items:center;gap:10px;background:var(--sf2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:600;line-height:1.35}
+.entity-num{flex:0 0 24px;width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
 .copy-bar{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:12px 14px;padding-bottom:calc(12px + env(safe-area-inset-bottom));margin:0 -14px}
 .copy-row{display:flex;gap:10px}
 .btn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:52px;padding:0 20px;border-radius:14px;font-family:'Cairo',sans-serif;font-size:15px;font-weight:700;border:none;cursor:pointer;flex:1}
@@ -249,10 +255,10 @@ function renderDashboard(){
 
   let html=`
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Clients</div><div class="kpi-value" style="color:#2563eb">${k.clients}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Total Apps</div><div class="kpi-value" style="color:#ea6800">${k.total}</div></div>
-    <div class="kpi-card"><div class="kpi-label">AI Email</div><div class="kpi-value" style="color:#059669">${k.ai}</div></div>
-    <div class="kpi-card"><div class="kpi-label">Manual</div><div class="kpi-value" style="color:#7c3aed">${k.manual}</div></div>
+    <div class="kpi-card"><div class="kpi-label">العملاء</div><div class="kpi-value" style="color:#2563eb">${k.clients}</div></div>
+    <div class="kpi-card"><div class="kpi-label">إجمالي التقديمات</div><div class="kpi-value" style="color:#ea6800">${k.total}</div></div>
+    <div class="kpi-card"><div class="kpi-label">تقديم بالإيميل</div><div class="kpi-value" style="color:#059669">${k.ai}</div></div>
+    <div class="kpi-card"><div class="kpi-label">تقديم مباشر</div><div class="kpi-value" style="color:#7c3aed">${k.manual}</div></div>
   </div>
   <div class="filter-bar">
     <button class="filter-btn ${activeFilter==='all'?'active':''}" onclick="setFilter('all')">الكل (${allClients.length})</button>
@@ -272,18 +278,31 @@ function renderDashboard(){
         ${newDot}
         <div class="client-name">${c.name}</div>
         <div class="client-meta">
-          <span class="badge badge-total">${c.total} apps</span>
-          <span class="badge badge-ai">AI: ${c.ac}</span>
-          <span class="badge badge-m">Manual: ${c.mc}</span>
+          <span class="badge badge-total">${c.total} تقديم</span>
+          <span class="badge badge-ai">إيميل: ${c.ac}</span>
+          <span class="badge badge-m">مباشر: ${c.mc}</span>
           ${newBadge}
         </div>
         <div class="progress"><div class="progress-fill" style="width:${c.pct}%"></div></div>
-        <div class="progress-label">${c.pct}% of ${c.target} target</div>
+        <div class="progress-label" style="direction:rtl;text-align:right">${c.pct}% من هدف ${c.target}</div>
       </div>`;
     });
   }
   html+='<div class="bottom-space"></div>';
   dash.innerHTML=html;
+}
+
+function collectEntities(c){
+  // Every distinct entity/company we applied to for this client, across all
+  // channels — email company, or the company/title of each manual application.
+  const names=[];
+  (c.ai||[]).forEach(a=>{const n=(a.company||'').trim(); if(n) names.push(n);});
+  ['acc','linkedin','website','indeed'].forEach(k=>{
+    (c[k]||[]).forEach(e=>{const n=((e.company||e.title)||'').trim(); if(n) names.push(n);});
+  });
+  const seen={}, out=[];
+  names.forEach(n=>{const key=n.toLowerCase(); if(!seen[key]){seen[key]=1; out.push(n);}});
+  return out;
 }
 
 function showClient(id){
@@ -299,20 +318,26 @@ function showClient(id){
   const days=daysSince(c.dateIn);
   const isNew=days<=10;
   let html=`
-  <button class="back-link" onclick="renderDashboard()">← Dashboard</button>
+  <button class="back-link" onclick="renderDashboard()">← الرئيسية</button>
   <div class="client-header">
     <h1>${c.name}</h1>
     <span class="client-email">${c.email}</span>
     <div class="client-badges">
-      <span class="badge badge-total">${c.total} total</span>
-      <span class="badge badge-ai">AI: ${c.ac}</span>
-      <span class="badge badge-m">Manual: ${manualCount}</span>
+      <span class="badge badge-total">${c.total} تقديم</span>
+      <span class="badge badge-ai">إيميل: ${c.ac}</span>
+      <span class="badge badge-m">مباشر: ${manualCount}</span>
       ${isNew?`<span class="badge badge-new">جديد · منذ ${days===0?'اليوم':days+' يوم'}</span>`:''}
     </div>
     ${c.dateIn?`<div class="date-label" style="margin-top:8px;font-size:11px;color:var(--muted)">تاريخ الانضمام: ${c.dateIn}</div>`:''}
   </div>`;
+  const entities=collectEntities(c);
+  if(entities.length){
+    html+=`<div class="entities-card"><div class="entities-head">🏢 الجهات التي تم التقديم عليها<span class="count-pill">${entities.length}</span></div><div class="entities">`;
+    entities.forEach((n,i)=>{html+=`<div class="entity-chip"><span class="entity-num">${i+1}</span><span>${n}</span></div>`;});
+    html+=`</div></div>`;
+  }
   if(c.ai&&c.ai.length){
-    html+=`<div class="app-section"><div class="app-section-title">📧 Email Applications<span class="count-pill">${c.ai.length}</span></div>`;
+    html+=`<div class="app-section"><div class="app-section-title">📧 التقديم عبر الإيميل<span class="count-pill">${c.ai.length}</span></div>`;
     c.ai.forEach(a=>{html+=`<div class="app-item"><div class="app-title">${a.company}</div><span class="app-sub">${a.email}</span></div>`;});
     html+='</div>';
   }
@@ -336,7 +361,7 @@ function showClient(id){
     c.indeed.forEach(e=>{html+=`<div class="app-item"><div class="app-title">${e.title}</div>${e.company?`<span class="app-sub">${e.company}</span>`:''}</div>`;});
     html+='</div>';
   }
-  if(!c.total)html+='<div class="empty">No applications yet.</div>';
+  if(!c.total)html+='<div class="empty">لا توجد تقديمات بعد.</div>';
   html+=`<div class="bottom-space"></div>
   <div class="copy-bar">
     <div class="copy-row">
