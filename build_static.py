@@ -88,6 +88,23 @@ def company_from_link(link):
     return None
 
 
+_PLAT = {"linkedin.com": "LinkedIn", "indeed.com": "Indeed", "smartrecruiters.com": "SmartRecruiters",
+         "lever.co": "Lever", "ashbyhq.com": "Ashby", "greenhouse.io": "Greenhouse", "hrapp.co": "HRApp",
+         "oraclecloud.com": "Oracle", "ceipal.com": "Ceipal", "recruitcrm.io": "RecruitCRM",
+         "now-remote.com": "Now-Remote", "ncoreplat.com": "nCore", "g42.ai": "G42", "adnoc.ae": "ADNOC"}
+
+
+def platform(link):
+    if not link:
+        return "-"
+    try: host = urlparse(link).netloc.lower()
+    except Exception: return "-"
+    for k, v in _PLAT.items():
+        if k in host:
+            return v
+    return host.replace("www.", "")
+
+
 def build_entities(cur, cid, email):
     """{'email': [{company,email}], 'portal': [{company,count}]} for one client."""
     cur.execute("""SELECT job_application_email AS em, job_title
@@ -101,14 +118,16 @@ def build_entities(cur, cid, email):
         seen_em.add(em.lower())
         email_apps.append({"company": EMAIL_CO.get(em.lower(), ""), "email": em})
 
-    cur.execute("SELECT job_link FROM manual_applications WHERE client_id=%s", (cid,))
-    counts = {}
+    cur.execute("SELECT job_title, job_link FROM manual_applications WHERE client_id=%s ORDER BY app_date", (cid,))
+    by_co = {}
     for m in cur.fetchall():
         co = company_from_link(m["job_link"])
-        if co:
-            counts[co] = counts.get(co, 0) + 1
-    portal = [{"company": k, "count": v} for k, v in
-              sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+        if not co:
+            continue
+        by_co.setdefault(co, []).append(
+            {"title": (m["job_title"] or "").strip(), "platform": platform(m["job_link"])})
+    portal = [{"company": co, "count": len(apps), "apps": apps} for co, apps in
+              sorted(by_co.items(), key=lambda kv: (-len(kv[1]), kv[0]))]
     return {"email": email_apps, "portal": portal}
 
 
@@ -271,6 +290,7 @@ body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;min-h
 .btn:active{opacity:.75}
 .btn-mint{background:var(--mint);color:#fff}
 .btn-orange{background:var(--orange);color:#fff}
+.btn-blue{background:var(--accent);color:#fff}
 .empty{text-align:center;color:var(--muted);font-size:14px;padding:40px 20px}
 .bottom-space{height:90px}
 .loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:15px}
@@ -384,6 +404,38 @@ function renderDashboard(){
   dash.innerHTML=html;
 }
 
+function buildEntitiesText(id){
+  const e=ENTITIES[String(id)];
+  const c=DATA?DATA.clients.find(x=>x.id===id):null;
+  const name=(c&&c.name)||(currentClient&&currentClient.name)||'';
+  if(!e) return '';
+  const portalTotal=(e.portal||[]).reduce((s,p)=>s+p.count,0);
+  const total=(e.email||[]).length+portalTotal;
+  const L=[];
+  L.push('*تقرير الجهات — '+name+'*');
+  L.push('الإجمالي: '+total+' تقديم  |  عبر الإيميل: '+(e.email||[]).length+'  |  عبر البورتالات: '+portalTotal);
+  L.push('');
+  if(e.email&&e.email.length){
+    L.push('📧 *التقديم عبر الإيميل ('+e.email.length+')*');
+    e.email.forEach((a,i)=>L.push((i+1)+'. '+(a.company||a.email)+' — '+a.email));
+    L.push('');
+  }
+  if(e.portal&&e.portal.length){
+    L.push('🏢 *التقديم عبر البورتالات — حسب الشركة*');
+    e.portal.forEach(p=>{
+      if(p.count>1){
+        L.push('');
+        L.push('▪️ *'+p.company+'* ('+p.count+' تقديمات):');
+        (p.apps||[]).forEach((a,j)=>L.push('   '+(j+1)+') '+(a.title||'-')+' — '+a.platform));
+      } else {
+        const a=(p.apps&&p.apps[0])||{};
+        L.push('▪️ *'+p.company+'* — '+(a.title||'-')+' ('+(a.platform||'')+')');
+      }
+    });
+  }
+  return L.join('\\n');
+}
+
 function renderEntities(id){
   // Real company names extracted from application emails + portal links at build
   // time (baked into ENTITIES), shown in two clear groups.
@@ -465,6 +517,7 @@ function showClient(id){
   if(!c.total)html+='<div class="empty">لا توجد تقديمات بعد.</div>';
   html+=`<div class="bottom-space"></div>
   <div class="copy-bar">
+    <button class="btn btn-blue" style="width:100%;margin-bottom:8px" onclick="copyText(buildEntitiesText(currentClient.id))">🏢 نسخ تقرير الجهات</button>
     <div class="copy-row">
       <button class="btn btn-mint" onclick="copyText(currentClient.copyText)">📋 نسخ الكل</button>
       <button class="btn btn-orange" onclick="copyToday(currentClient.id)">📋 نسخ اليوم</button>
