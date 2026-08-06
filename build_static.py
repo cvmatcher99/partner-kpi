@@ -9,8 +9,16 @@ import json, os
 import psycopg2, psycopg2.extras
 from datetime import datetime
 
-DB = dict(host="77.243.85.225", database="tabashir",
-          user="postgres", password="tabashir2025", connect_timeout=8)
+DB = dict(
+    host="77.243.85.225", database="tabashir",
+    user="postgres", password="tabashir2025",
+    connect_timeout=10,
+    # Prevent queries from hanging indefinitely (GitHub Actions runners
+    # sometimes have poor routing to this server — fail fast instead).
+    options="-c statement_timeout=25000 -c lock_timeout=10000",
+    keepalives=1, keepalives_idle=10,
+    keepalives_interval=5, keepalives_count=3,
+)
 
 
 def categorize(link):

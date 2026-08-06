@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: kpi-refresh
@@ -19,14 +21,21 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 4        # fail fast — DB hang was causing 15-min hangs
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install --quiet psycopg2-binary
+
+      - name: Install deps
+        run: pip install --quiet psycopg2-binary
+
       - name: Rebuild docs from live DB
+        timeout-minutes: 3    # hard kill if script hangs
         run: python build_static.py
+
       - name: Commit refreshed data
         run: |
           git config user.name "kpi-refresh-bot"
