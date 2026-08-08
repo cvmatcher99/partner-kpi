@@ -576,33 +576,6 @@ function fetchData(){
 
 function copyAllTodayReports(){var nl=String.fromCharCode(10);var sep=nl+nl+'――――――――――――――――――'+nl+nl;var zero='0';var parts=[];var ids=DATA?DATA.clients.map(function(c){return String(c.id);}):Object.keys(TODAY_COPY);ids.forEach(function(id){var t=TODAY_COPY[id];if(t&&t.split('Total: 0').length===1&&t.split(zero+' ').length<3){parts.push(t);}});if(!parts.length){showToast('No apps today');return;}copyText(parts.join(sep));showToast('Copied '+parts.length+' reports');}
 fetchData();
-):Object.keys(TODAY_COPY);
-  src.forEach(function(id){
-    var text=TODAY_COPY[id];
-    if(text&&text.indexOf('0 \u062a\u0642\u062f\u064a\u0645')===-1&&text.indexOf('\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a: 0')===-1){
-      parts.push(text);
-    }
-  });
-  if(parts.length===0){showToast('\u0644\u0627 \u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0627\u0644\u064a\u0648\u0645');return;}
-  var sep='\n\n\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\n\n';
-  copyText(parts.join(sep));
-  showToast('\u062a\u0645 \u0646\u0633\u062e '+parts.length+' \u062a\u0642\u0631\u064a\u0631 \u2713');
-}
-    });
-  } else {
-    Object.keys(TODAY_COPY).forEach(function(id){
-      var text=TODAY_COPY[id];
-      if(text && text.indexOf('\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a: 0 ')===-1){
-        parts.push(text);
-      }
-    });
-  }
-  if(parts.length===0){showToast('\u0644\u0627 \u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0627\u0644\u064a\u0648\u0645');return;}
-  copyText(parts.join('\n\n\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\n\n'));
-  showToast('\u062a\u0645 \u0646\u0633\u062e ' + parts.length + ' \u062a\u0642\u0631\u064a\u0631 \u2713');
-}
-
-fetchData();
 </script>
 </body>
 </html>"""
