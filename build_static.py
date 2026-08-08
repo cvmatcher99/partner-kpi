@@ -574,7 +574,7 @@ function fetchData(){
     });
 }
 
-function copyAllTodayReports(){var nl=String.fromCharCode(10);var sep=nl+nl+'――――――――――――――――――'+nl+nl;var zero='0';var parts=[];var ids=DATA?DATA.clients.map(function(c){return String(c.id);}):Object.keys(TODAY_COPY);ids.forEach(function(id){var t=TODAY_COPY[id];if(t&&t.split('Total: 0').length===1&&t.split(zero+' ').length<3){parts.push(t);}});if(!parts.length){showToast('No apps today');return;}copyText(parts.join(sep));showToast('Copied '+parts.length+' reports');}
+function copyAllTodayReports(){var nl=String.fromCharCode(10);var sep=nl+nl+'――――――――――――――――――'+nl+nl;var parts=[];var ids=DATA?DATA.clients.map(function(c){return String(c.id);}):Object.keys(TODAY_COPY);ids.forEach(function(id){var t=TODAY_COPY[id];if(t&&t.split(nl).length>3){parts.push(t);}});if(!parts.length){showToast('No apps today');return;}copyText(parts.join(sep));showToast('Copied '+parts.length+' reports');}
 fetchData();
 </script>
 </body>
