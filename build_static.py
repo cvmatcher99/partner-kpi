@@ -576,12 +576,18 @@ function fetchData(){
 
 function copyAllTodayReports(){
   var parts=[];
-  if(DATA){
-    DATA.clients.forEach(function(c){
-      var text=TODAY_COPY[String(c.id)];
-      if(text && text.indexOf('\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a: 0 ')===-1){
-        parts.push(text);
-      }
+  var src=DATA?DATA.clients.map(function(c){return String(c.id);}):Object.keys(TODAY_COPY);
+  src.forEach(function(id){
+    var text=TODAY_COPY[id];
+    if(text&&text.indexOf('0 \u062a\u0642\u062f\u064a\u0645')===-1&&text.indexOf('\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a: 0')===-1){
+      parts.push(text);
+    }
+  });
+  if(parts.length===0){showToast('\u0644\u0627 \u062a\u0642\u062f\u064a\u0645\u0627\u062a \u0627\u0644\u064a\u0648\u0645');return;}
+  var sep='\n\n\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\u2015\n\n';
+  copyText(parts.join(sep));
+  showToast('\u062a\u0645 \u0646\u0633\u062e '+parts.length+' \u062a\u0642\u0631\u064a\u0631 \u2713');
+}
     });
   } else {
     Object.keys(TODAY_COPY).forEach(function(id){
