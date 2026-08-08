@@ -574,9 +574,7 @@ function fetchData(){
     });
 }
 
-function copyAllTodayReports(){
-  var parts=[];
-  var src=DATA?DATA.clients.map(function(c){return String(c.id);}):Object.keys(TODAY_COPY);
+function copyAllTodayReports(){var nl=String.fromCharCode(10);var sep=nl+nl+'――――――――――'+nl+nl;var parts=[];var src=DATA?DATA.clients.map(function(c){return String(c.id);}):Object.keys(TODAY_COPY);src.forEach(function(id){var text=TODAY_COPY[id];if(text&&text.indexOf('الإجمالي: 0')===-1){parts.push(text);}});if(parts.length===0){showToast('لا تقديمات اليوم');return;}copyText(parts.join(sep));showToast('تم نسخ '+parts.length+' تقرير ✓');}):Object.keys(TODAY_COPY);
   src.forEach(function(id){
     var text=TODAY_COPY[id];
     if(text&&text.indexOf('0 \u062a\u0642\u062f\u064a\u0645')===-1&&text.indexOf('\u0627\u0644\u0625\u062c\u0645\u0627\u0644\u064a: 0')===-1){
