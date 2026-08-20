@@ -543,7 +543,7 @@ function fetchData(){
   lb.textContent='● جاري التحديث...';
   lb.style.background='#fef3c7';
   lb.style.color='#92400e';
-  fetch(API)
+  fetch(API+'?_t='+Date.now(),{cache:'no-store'})
     .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
     .then(function(d){
       DATA=d;
