@@ -418,11 +418,13 @@ function buildEntitiesText(id){
   const c=DATA?DATA.clients.find(x=>x.id===id):null;
   const name=(c&&c.name)||(currentClient&&currentClient.name)||'';
   if(!e) return '';
-  const portalTotal=(e.portal||[]).reduce((s,p)=>s+p.count,0);
-  const total=(e.email||[]).length+portalTotal;
+  // Use real totals from live API (c.total, c.ac, c.mc) instead of counting unique entities
+  const realTotal = c ? c.total : ((e.email||[]).length + (e.portal||[]).reduce((s,p)=>s+p.count,0));
+  const realAI    = c ? c.ac    : (e.email||[]).length;
+  const realMC    = c ? c.mc    : (e.portal||[]).reduce((s,p)=>s+p.count,0);
   const L=[];
   L.push('*تقرير الجهات — '+name+'*');
-  L.push('الإجمالي: '+total+' تقديم  |  عبر الإيميل: '+(e.email||[]).length+'  |  عبر البورتالات: '+portalTotal);
+  L.push('الإجمالي: '+realTotal+' تقديم  |  عبر الإيميل: '+realAI+'  |  مباشر: '+realMC);
   L.push('');
   if(e.email&&e.email.length){
     L.push('📧 *التقديم عبر الإيميل ('+e.email.length+')*');
